@@ -239,10 +239,18 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
+O3 = -O3 -ffast-math -ftree-vectorize -funsafe-math-optimizations
+GRAPHITE = -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block
+LOOPNEST = -floop-nest-optimize
+LTO = -flto -fuse-linker-plugin
+NOWARN = -fomit-frame-pointer -Wno-array-bounds -Wno-strict-overflow $(call cc-disable-warning,maybe-uninitialized,)
+PIPE = -pipe
+
+
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes $(O3) $(LTO) $(PIPE) $(NOWARN)
+HOSTCXXFLAGS = $(O3) $(LTO) $(PIPE) $(NOWARN)
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -570,19 +578,7 @@ endif # $(dot-config)
 # Defaults to vmlinux, but the arch makefile usually adds further targets
 all: vmlinux
 
-ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
-else
-ifdef CONFIG_LESS_GCC_OPT
-KBUILD_CFLAGS	+= -O1
-else
-KBUILD_CFLAGS	+= -O2
-endif
-endif
-
-# conserve stack if available
-# do this early so that an architecture can override it.
-KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
+KBUILD_CFLAGS	+= $(O3) $(LTO) $(PIPE) $(NOWARN)
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
